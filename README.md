@@ -31,6 +31,10 @@ A comprehensive weather application built with Next.js, Python FastAPI, Supabase
 - **OpenWeatherMap API** - Weather data source
 - **OpenAI API** - AI-powered insights
 
+## Video Demo:
+
+https://github.com/user-attachments/assets/ae47a934-0fec-443a-b467-861cdd023ee5
+
 ## Project Structure
 
 ```
@@ -198,13 +202,14 @@ The app will be available at `http://localhost:3000`
 - Weather icons and descriptions
 
 ### 2. Historical Analytics
+## Note: Historical Analysis currently only works for a single day because we are currently using a free version of the weather api that only allows use to fetch data up to an hour in the past. You can upgrade your api version to get the full working analysis result
 - View weather trends over time
 - 7-day, 14-day, 30-day analytics
 - Average temperature, humidity, wind speed
 - Most common weather conditions
 - Interactive charts
 
-### 3. AI-Powered Insights (using LangGraph)
+### 3. AI-Powered Insights 
 - Natural language weather queries
 - Daily weather summaries
 - Clothing recommendations
