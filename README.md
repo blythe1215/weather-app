@@ -198,13 +198,14 @@ The app will be available at `http://localhost:3000`
 - Weather icons and descriptions
 
 ### 2. Historical Analytics
+## Note: Historical Analysis currently only works for a single day because we are currently using a free version of the weather api that only allows use to fetch data up to an hour in the past. You can upgrade your api version to get the full working analysis result
 - View weather trends over time
 - 7-day, 14-day, 30-day analytics
 - Average temperature, humidity, wind speed
 - Most common weather conditions
 - Interactive charts
 
-### 3. AI-Powered Insights (using LangGraph)
+### 3. AI-Powered Insights 
 - Natural language weather queries
 - Daily weather summaries
 - Clothing recommendations
