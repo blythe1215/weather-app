@@ -34,12 +34,13 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
         setCities(results);
       } catch (error) {
         console.error('Failed to search cities:', error);
+        setCities([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    const debounce = setTimeout(searchCities, 300);
+    const debounce = setTimeout(searchCities, 500);
     return () => clearTimeout(debounce);
   }, [query]);
 
@@ -56,7 +57,7 @@ export default function CitySearch({ onCitySelect }: CitySearchProps) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for a city..."
+          placeholder="Search for any city worldwide..."
           className="w-full px-4 py-3 pr-10 text-lg border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
         {isLoading && (

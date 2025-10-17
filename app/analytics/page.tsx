@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { WeatherAPI } from '@/lib/api';
+import CitySearch from '@/app/dashboard/components/CitySearch';
 import type { City, WeatherRecord, WeatherAnalytics } from '@/types/weather';
 import {
   LineChart,
@@ -20,31 +21,40 @@ import {
 import Link from 'next/link';
 
 export default function AnalyticsPage() {
-  const [cities, setCities] = useState<City[]>([]);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [historicalData, setHistoricalData] = useState<WeatherRecord[]>([]);
   const [analytics, setAnalytics] = useState<WeatherAnalytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [days, setDays] = useState(7);
 
-  useEffect(() => {
-    loadCities();
-  }, []);
-
-  const loadCities = async () => {
+  const handleCitySearch = async (cityName: string) => {
+    setLoading(true);
     try {
-      const data = await WeatherAPI.getAllCities();
-      setCities(data);
-      if (data.length > 0) {
-        handleCitySelect(data[0]);
-      }
+      // Get current weather to fetch city details
+      const weatherData = await WeatherAPI.getCurrentWeather(cityName);
+
+      const city: City = {
+        id: weatherData.id,
+        city_id: weatherData.id,
+        name: weatherData.name,
+        country: weatherData.sys.country,
+        latitude: weatherData.coord.lat,
+        longitude: weatherData.coord.lon,
+        timezone: weatherData.timezone,
+        created_at: new Date().toISOString(),
+      };
+
+      setSelectedCity(city);
+      await loadCityAnalytics(city);
     } catch (error) {
-      console.error('Failed to load cities:', error);
+      console.error('Failed to load city:', error);
+      setHistoricalData([]);
+      setAnalytics(null);
+      setLoading(false);
     }
   };
 
-  const handleCitySelect = async (city: City) => {
-    setSelectedCity(city);
+  const loadCityAnalytics = async (city: City) => {
     setLoading(true);
 
     try {
@@ -67,7 +77,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (selectedCity) {
-      handleCitySelect(selectedCity);
+      loadCityAnalytics(selectedCity);
     }
   }, [days]);
 
@@ -107,37 +117,25 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        {/* City Selector and Time Range */}
+        {/* City Search and Time Range */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex-1 min-w-[200px]">
+          <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-end">
+            <div className="flex-1 w-full">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select City
+                Search City
               </label>
-              <select
-                value={selectedCity?.id || ''}
-                onChange={(e) => {
-                  const city = cities.find((c) => c.id === parseInt(e.target.value));
-                  if (city) handleCitySelect(city);
-                }}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {cities.map((city) => (
-                  <option key={city.id} value={city.id}>
-                    {city.name}, {city.country}
-                  </option>
-                ))}
-              </select>
+              <CitySearch onCitySelect={handleCitySearch} />
             </div>
 
-            <div className="flex-1 min-w-[200px]">
+            <div className="w-full lg:w-64">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Time Period
               </label>
               <select
                 value={days}
                 onChange={(e) => setDays(parseInt(e.target.value))}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={!selectedCity}
               >
                 <option value={1}>Last 24 hours</option>
                 <option value={3}>Last 3 days</option>
@@ -147,6 +145,17 @@ export default function AnalyticsPage() {
               </select>
             </div>
           </div>
+
+          {selectedCity && (
+            <div className="mt-4 pt-4 border-t">
+              <p className="text-sm text-gray-600">
+                Viewing analytics for:{' '}
+                <span className="font-semibold text-gray-900">
+                  {selectedCity.name}, {selectedCity.country}
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -158,43 +167,67 @@ export default function AnalyticsPage() {
           <>
             {/* Analytics Summary */}
             {analytics && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-1">
-                    Average Temperature
-                  </h3>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {analytics.avg_temperature.toFixed(1)}°C
-                  </p>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">
+                      Average Temperature
+                    </h3>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {analytics.avg_temperature.toFixed(1)}°C
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">
+                      Temperature Range
+                    </h3>
+                    <p className="text-3xl font-bold text-orange-600">
+                      {analytics.min_temperature.toFixed(1)}° - {analytics.max_temperature.toFixed(1)}°
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">
+                      Average Humidity
+                    </h3>
+                    <p className="text-3xl font-bold text-cyan-600">
+                      {analytics.avg_humidity.toFixed(0)}%
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-lg shadow-md p-6">
+                    <h3 className="text-sm font-medium text-gray-600 mb-1">
+                      Most Common
+                    </h3>
+                    <p className="text-2xl font-bold text-gray-700">
+                      {analytics.most_common_condition}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-1">
-                    Temperature Range
-                  </h3>
-                  <p className="text-3xl font-bold text-orange-600">
-                    {analytics.min_temperature.toFixed(1)}° - {analytics.max_temperature.toFixed(1)}°
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-1">
-                    Average Humidity
-                  </h3>
-                  <p className="text-3xl font-bold text-cyan-600">
-                    {analytics.avg_humidity.toFixed(0)}%
-                  </p>
-                </div>
-
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h3 className="text-sm font-medium text-gray-600 mb-1">
-                    Most Common
-                  </h3>
-                  <p className="text-2xl font-bold text-gray-700">
-                    {analytics.most_common_condition}
-                  </p>
-                </div>
-              </div>
+                {/* Data Info Card */}
+                {analytics.total_records <= 3 && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="text-2xl">ℹ️</div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900 mb-1">
+                          Limited Historical Data
+                        </h4>
+                        <p className="text-sm text-amber-800 mb-2">
+                          This city has only <strong>{analytics.total_records}</strong> weather record
+                          {analytics.total_records !== 1 ? 's' : ''} in the database.
+                          Analytics will show the same values across different time periods until more data is collected.
+                        </p>
+                        <p className="text-xs text-amber-700">
+                          💡 Tip: Search for this city more often, or run the data pipeline to collect hourly data automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Temperature Trend Chart */}
@@ -310,15 +343,30 @@ export default function AnalyticsPage() {
             )}
 
             {/* No Data Message */}
-            {chartData.length === 0 && !loading && (
+            {!selectedCity && !loading && (
               <div className="bg-white rounded-lg shadow-md p-12 text-center">
-                <p className="text-gray-600 text-lg mb-4">
-                  No historical data available for this city yet.
+                <div className="text-6xl mb-4">📊</div>
+                <p className="text-gray-600 text-lg mb-2">
+                  Search for a city to view analytics
                 </p>
                 <p className="text-gray-500">
-                  Data will be collected automatically once you start searching for
-                  this city, or you can run the data pipeline to collect historical
-                  data.
+                  Get detailed weather trends, historical data, and insights
+                </p>
+              </div>
+            )}
+
+            {selectedCity && chartData.length === 0 && !loading && (
+              <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                <div className="text-6xl mb-4">📈</div>
+                <p className="text-gray-600 text-lg mb-4">
+                  No historical data available for {selectedCity.name} yet.
+                </p>
+                <p className="text-gray-500 mb-4">
+                  Data will be collected automatically as you search for this city.
+                  Analytics will become more detailed over time.
+                </p>
+                <p className="text-sm text-gray-400">
+                  Tip: Run the data pipeline to collect historical data faster
                 </p>
               </div>
             )}
