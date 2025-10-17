@@ -2,6 +2,11 @@
 
 A comprehensive weather application built with Next.js, Python FastAPI, Supabase, and AI-powered insights using LangGraph.
 
+## Video Demo:
+
+https://github.com/user-attachments/assets/ae47a934-0fec-443a-b467-861cdd023ee5
+
+
 ## Technologies Used
 
 ### Frontend
